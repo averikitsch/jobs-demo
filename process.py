@@ -43,7 +43,7 @@ example_db = []
 
 def save_processed_document(document):
     example_db.append({"name": get_field("Bill", document), "total": get_field("Balance Due", document)})
-    # print(example_db)
+    print(example_db)
     
 
 def get_field(field_name: str, document: dict):
