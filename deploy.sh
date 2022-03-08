@@ -15,3 +15,6 @@ gcloud alpha run jobs update invoice-processing \
 
 
 gcloud alpha run jobs run invoice-processing
+
+
+# Create a scheduler job

@@ -1,5 +1,21 @@
 # /usr/env/python3
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import os
 from google.cloud import documentai_v1 as documentai
+from google.cloud import firestore
 
 
 def process_document(
@@ -28,22 +44,6 @@ def process_document(
     result = client.process_document(request=request)
 
     return result.document
-
-
-def summarize():
-    html = '<html><body><table><tr><th>Invoicee</th><th>Balance Due</th></tr>'
-    for bill in example_db:
-        html += f'<tr><td>{bill["name"]}</td><td>{bill["total"]}</td></tr>'
-
-    html += '</table></body></html>\n'
-    return html
-
-
-example_db = []
-
-def save_processed_document(document):
-    example_db.append({"name": get_field("Bill", document), "total": get_field("Balance Due", document)})
-    print(example_db)
     
 
 def get_field(field_name: str, document: dict):
@@ -74,3 +74,29 @@ def get_text(doc_element: dict, document: dict):
         end_index = int(segment.end_index)
         response += document.text[start_index:end_index]
     return response
+
+
+def summarize():
+    html = '<html><body><table><tr><th>Invoicee</th><th>Balance Due</th></tr>'
+    for bill in example_db:
+        html += f'<tr><td>{bill["name"]}</td><td>{bill["total"]}</td></tr>'
+
+    html += '</table></body></html>\n'
+    return html
+
+
+db = firestore.Client()
+def save_processed_document(document):
+    collection = os.getenv("COLLECTION", "invoices")
+    entity = list(filter(lambda entity: "supplier_name" in entity.type_, document.entities))[0]
+    company = entity.mention_text
+    total = float(get_field("Total", document).replace(',', '')[1:-1])
+    paid = float(get_field("Amount Paid", document).replace(',', '')[1:-1])
+    data = {
+        "date": get_field("Date", document).strip(),
+        "due_date": get_field("Due Date", document).strip(),
+        "total": total,
+        "amount_due": total - paid,
+        "state": "Not Processed"
+    }
+    db.collection(collection).document(company).set(data)

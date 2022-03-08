@@ -4,6 +4,8 @@
 * A Cloud Run Job processes all invoices and produces a report
 * Cloud Scheduler runs the job every night
 
+![diagram](./diagram.png)
+
 Currently the Document AI integration with GCS is not working. Therefore this sample uses the 2nd Gen environment to mount a GCS bucket similar to [Using Cloud Storage FUSE with Cloud Run tutorial](https://cloud.google.com/run/docs/tutorials/network-filesystems-fuse).
 
 # Deploying
@@ -52,3 +54,6 @@ Currently the Document AI integration with GCS is not working. Therefore this sa
 # Local testing
 
 Use `export MNT_DIR=$(pwd)/invoices`
+
+
+gsutil cp -r *.pdf gs://starter-akitsch-invoices/incoming
