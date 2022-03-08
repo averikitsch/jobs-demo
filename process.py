@@ -79,12 +79,12 @@ def get_text(doc_element: dict, document: dict):
 def summarize():
     html = '<html><body><table><tr><th>Invoicee</th><th>Balance Due</th></tr>'
     for bill in example_db:
-        html += f'<tr><td>{bill["name"]}</td><td>{bill["total"]}</td></tr>'
+        html += f'<tr><td>{bill["company"]}</td><td>{bill["total"]}</td><td>{bill["amount_due"]}</td><td>{bill["state"]}</td></tr>'
 
     html += '</table></body></html>\n'
     return html
 
-
+example_db = []
 db = firestore.Client()
 def save_processed_document(document):
     collection = os.getenv("COLLECTION", "invoices")
@@ -93,6 +93,7 @@ def save_processed_document(document):
     total = float(get_field("Total", document).replace(',', '')[1:-1])
     paid = float(get_field("Amount Paid", document).replace(',', '')[1:-1])
     data = {
+        "company": company,
         "date": get_field("Date", document).strip(),
         "due_date": get_field("Due Date", document).strip(),
         "total": total,
@@ -100,3 +101,4 @@ def save_processed_document(document):
         "state": "Not Processed"
     }
     db.collection(collection).document(company).set(data)
+    example_db.append(data)
