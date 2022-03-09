@@ -8,6 +8,9 @@ Currently the Document AI integration with GCS is not working. Therefore this sa
 
 # Deploying
 * Enable Document AI, Cloud Run, Firestore, Scheduler APIs for your project
+  ```
+  gcloud services enable firestore.googleapis.com run.googleapis.com documentai.googleapis.com
+  ```
 
 * Create a Firestore database
 
@@ -28,6 +31,8 @@ Currently the Document AI integration with GCS is not working. Therefore this sa
   gsutil mb -l us-central1 gs://$GOOGLE_CLOUD_PROJECT-invoices
   ```
 
+* Create directories, `incoming` and `processed` in the bucket
+
 * Add some invoices
   ```
   gsutil cp -r incoming/*.pdf gs://$GOOGLE_CLOUD_PROJECT-invoices/incoming
@@ -45,8 +50,7 @@ Currently the Document AI integration with GCS is not working. Therefore this sa
       --execution-environment gen2 \
       --region us-central1 \
       --set-env-vars BUCKET=$GOOGLE_CLOUD_PROJECT-invoices \
-      --set-env-vars PROCESSOR_ID=$PROCESSOR_ID \
-      --set-env-vars GOOGLE_CLOUD_PROJECT=$GOOGLE_CLOUD_PROJECT
+      --set-env-vars PROCESSOR_ID=$PROCESSOR_ID
   ```
 
 * Run the job
@@ -65,11 +69,10 @@ Currently the Document AI integration with GCS is not working. Therefore this sa
 
 Use `export MNT_DIR=$(pwd)`
 
-# Scheduler
+# Cloud Scheduler
 ```
 gcloud iam service-accounts create process-identity
 
-# TODO: confirm working
 gcloud alpha run jobs add-iam-policy-binding invoice-processing \
   --member serviceAccount:process-identity@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com \
   --role roles/run.invoker

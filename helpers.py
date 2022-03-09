@@ -35,23 +35,3 @@ def get_service_region() -> str:
     data = requests.get(METADATA_URI + slug, headers={"Metadata-Flavor": "Google"})
     return data.content
 
-
-def write_file(mnt_dir, filename, content):
-    """Write files to a directory with date created"""
-    date = datetime.datetime.utcnow()
-    file_date = '{dt:%a}-{dt:%b}-{dt:%d}-{dt:%H}:{dt:%M}-{dt:%Y}'.format(dt=date)
-    with open(f'{mnt_dir}/{filename}-{file_date}.html', 'a') as f:
-        f.write(content)
-
-
-def move_source_pdf(bucket_name, name):
-    # Source blob name is incoming/{name}.pdf.
-    # Move (rename) it to processed/{name}.pdf
- 
-    client = storage.Client()
-    bucket = client.bucket(bucket_name)
-    blob = bucket.blob(f"incoming/{name}.pdf")
-    print(f"Blob is named {blob.name}")
- 
-    bucket.rename_blob(blob, f"processed/{name}.pdf")
- 

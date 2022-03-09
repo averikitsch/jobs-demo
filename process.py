@@ -98,7 +98,7 @@ def save_processed_document(document):
         "due_date": get_field("Due Date", document).strip(),
         "total": total,
         "amount_due": total - paid,
-        "state": "Not Processed"
+        "state": "Not Approved"
     }
     db.collection(collection).document(company).set(data)
     example_db.append(data)

@@ -276,7 +276,7 @@ def generate():
     page_layout.add(Paragraph("Note: This is a test order. No actual transaction took place."))
 
     # store
-    with open(f"invoices/{company}-{invoice_num}.pdf", "wb") as out_file_handle:
+    with open(f"incoming/{company}-{invoice_num}.pdf", "wb") as out_file_handle:
         PDF.dumps(out_file_handle, pdf)
 
 

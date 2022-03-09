@@ -54,9 +54,6 @@ if __name__ == "__main__":
                 process.save_processed_document(document)
                 os.rename(full_path, join(outgoing_path, file))
 
-        # Create a summary
-        html = process.summarize()
-        write_file(join(mnt_dir, "summaries/"), "summary", html)
     except Exception as err:
         message = f"Task #{TASK_NUM}, Attempt #{ATTEMPT_NUM} failed: {str(err)}"
         print(json.dumps({"message": message, "severity": "ERROR"}))
