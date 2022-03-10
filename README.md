@@ -1,7 +1,7 @@
 # Cloud Run Jobs - Invoice Processor
 
 * Invoices are manually uploading to GCS 
-* A Cloud Run Job processes all invoices and produces a report
+* A Cloud Run Job processes all invoices, moves the PDF from `incoming` to `processed` and writes to a Firestore collection
 * Cloud Scheduler runs the job every night
 
 Currently the Document AI integration with GCS is not working. Therefore this sample uses the 2nd Gen environment to mount a GCS bucket similar to [Using Cloud Storage FUSE with Cloud Run tutorial](https://cloud.google.com/run/docs/tutorials/network-filesystems-fuse).
@@ -31,7 +31,7 @@ Currently the Document AI integration with GCS is not working. Therefore this sa
   gsutil mb -l us-central1 gs://$GOOGLE_CLOUD_PROJECT-invoices
   ```
 
-* Create directories, `incoming` and `processed` in the bucket
+* Create directories, `incoming` and `processed`, in the bucket
 
 * Add some invoices
   ```
@@ -69,19 +69,26 @@ Currently the Document AI integration with GCS is not working. Therefore this sa
 
 Use `export MNT_DIR=$(pwd)`
 
-# Cloud Scheduler
-```
-gcloud iam service-accounts create process-identity
+# Cloud Scheduler Job
 
-gcloud alpha run jobs add-iam-policy-binding invoice-processing \
-  --member serviceAccount:process-identity@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com \
-  --role roles/run.invoker
-```
-Every day at midnight:
-```
-gcloud scheduler jobs create http my-job \
-  --schedule="0 0 * * *" \
-  --uri="https://us-central1-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$GOOGLE_CLOUD_PROJECT/jobs/invoice-processing:run" \
-  --http-method=POST \
-  --oauth-service-account-email=process-identity@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com
-```
+* Create new service account
+  ```
+  gcloud iam service-accounts create process-identity
+  ```
+
+* Give the service account access to invoke the `invoice-processing` job
+  ```
+  gcloud alpha run jobs add-iam-policy-binding invoice-processing \
+    --member serviceAccount:process-identity@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com \
+    --role roles/run.invoker
+  ```
+  Note: The job does not have a publicly available endpoint; therefore must the Cloud Scheduler Job must have permissions to invoke.
+
+* Create Cloud Scheduler Job for every day at midnight:
+  ```
+  gcloud scheduler jobs create http my-job \
+    --schedule="0 0 * * *" \
+    --uri="https://us-central1-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$GOOGLE_CLOUD_PROJECT/jobs/invoice-processing:run" \
+    --http-method=POST \
+    --oauth-service-account-email=process-identity@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com
+  ```
