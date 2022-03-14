@@ -89,7 +89,7 @@ def save_processed_document(document, file, incoming_path, outgoing_path):
     
     processed_uri = join(outgoing_path, file)
     labeled_uri = join(outgoing_path, f'labeled-{file}')
-
+    os.rename(incoming_path, processed_uri)
     bounding_box(document, processed_uri, labeled_uri)
 
     data = {
@@ -103,7 +103,6 @@ def save_processed_document(document, file, incoming_path, outgoing_path):
         "state": "Not Approved"
     }
     db.collection(collection).document(company).set(data)
-    os.rename(incoming_path, processed_uri)
 
 
 
@@ -124,4 +123,3 @@ def bounding_box(document, file_path, labeled_path):
                 vertices[3]['x'], vertices[3]['y']], outline='blue')
 
         labeled.save(labeled_path)
-    # document_image

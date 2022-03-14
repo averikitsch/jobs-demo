@@ -22,38 +22,37 @@ import sys
 
 
 if __name__ == "__main__":
-    # try:
-    # Retrieve Jobs-defined env vars
-    TASK_NUM = os.getenv("TASK_NUM", 0)
-    ATTEMPT_NUM = os.getenv("ATTEMPT_NUM", 0)
+    try:
+        # Retrieve Jobs-defined env vars
+        TASK_NUM = os.getenv("TASK_NUM", 0)
+        ATTEMPT_NUM = os.getenv("ATTEMPT_NUM", 0)
 
-    # Retrieve user-defined env vars
-    location =  get_service_region()
-    project_id = os.getenv("GOOGLE_CLOUD_PROJECT", get_project_id())
-    processor_id = os.environ["PROCESSOR_ID"]
-    mnt_dir = os.getenv("MNT_DIR", "/mnt/gcs")
+        # Retrieve user-defined env vars
+        location =  "us"
+        project_id = os.getenv("GOOGLE_CLOUD_PROJECT", get_project_id())
+        processor_id = os.environ["PROCESSOR_ID"]
+        mnt_dir = os.getenv("MNT_DIR", "/mnt/gcs")
 
-    # Ensure successful mount of the GCS bucket
-    if not isdir(mnt_dir):
-        raise Exception(
-            "Mount path is not a directory. Check your MNT_DIR env var.")
+        # Ensure successful mount of the GCS bucket
+        if not isdir(mnt_dir):
+            raise Exception(
+                "Mount path is not a directory. Check your MNT_DIR env var.")
 
-    # Get files in "incoming/" directory
-    incoming_path = join(mnt_dir, "incoming/")
-    outgoing_path = join(mnt_dir, "processed/")
-    for file in os.listdir(incoming_path):
-        full_path = join(incoming_path, file)
-        if isfile(full_path):
-            print(f"Processing {file}")
-            # Process PDF using Document AI
-            document = process.process_document(
-                project_id, location, processor_id, full_path)
-            process.save_processed_document(document, file, full_path, outgoing_path)
-            print(f"Done with {file}")
-            # Save to Firestore
+        # Get files in "incoming/" directory
+        incoming_path = join(mnt_dir, "incoming/")
+        outgoing_path = join(mnt_dir, "processed/")
+        for file in os.listdir(incoming_path):
+            full_path = join(incoming_path, file)
+            if isfile(full_path):
+                print(f"Processing {file}")
+                # Process PDF using Document AI
+                document = process.process_document(
+                    project_id, location, processor_id, full_path)
+                process.save_processed_document(document, file, full_path, outgoing_path)
+                print(f"Done with {file}")
 
-    # except Exception as err:
-    #     message = f"Task #{TASK_NUM}, Attempt #{ATTEMPT_NUM} failed: {str(err)}"
-    #     print(json.dumps({"message": message, "severity": "ERROR"}))
-    #     sys.exit(1)  # Retry Job Task by exiting the process
+    except Exception as err:
+        message = f"Task #{TASK_NUM}, Attempt #{ATTEMPT_NUM} failed: {str(err)}"
+        print(json.dumps({"message": message, "severity": "ERROR"}))
+        sys.exit(1)  # Retry Job Task by exiting the process
         
