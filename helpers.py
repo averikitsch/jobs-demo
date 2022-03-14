@@ -15,7 +15,6 @@
 
 import google.auth
 import requests
-import datetime
 from google.cloud import storage
 
 METADATA_URI = "http://metadata.google.internal/computeMetadata/v1/"
@@ -32,6 +31,11 @@ def get_service_region() -> str:
     """Get region from local metadata server
     Region in format: projects/PROJECT_NUMBER/regions/REGION"""
     slug = "instance/region"
-    data = requests.get(METADATA_URI + slug, headers={"Metadata-Flavor": "Google"})
-    return data.content
+    region = ""
+    try:
+        data = requests.get(METADATA_URI + slug, headers={"Metadata-Flavor": "Google"})
+        region = data.content[0:2]
+    except Exception:
+        region = "us"
+    return region
 
