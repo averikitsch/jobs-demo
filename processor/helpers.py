@@ -15,8 +15,6 @@
 
 import google.auth
 import requests
-import datetime
-from google.cloud import storage
 
 METADATA_URI = "http://metadata.google.internal/computeMetadata/v1/"
 

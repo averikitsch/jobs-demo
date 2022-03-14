@@ -86,13 +86,14 @@ def summarize():
 
 example_db = []
 db = firestore.Client()
-def save_processed_document(document):
+def save_processed_document(document, blob_name):
     collection = os.getenv("COLLECTION", "invoices")
     entity = list(filter(lambda entity: "supplier_name" in entity.type_, document.entities))[0]
     company = entity.mention_text
     total = float(get_field("Total", document).replace(',', '')[1:-1])
     paid = float(get_field("Amount Paid", document).replace(',', '')[1:-1])
     data = {
+        "blob_name": blob_name,
         "company": company,
         "date": get_field("Date", document).strip(),
         "due_date": get_field("Due Date", document).strip(),

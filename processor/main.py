@@ -15,9 +15,10 @@
 
 import json
 import os
+import re
 from os.path import isdir, isfile, join
 import process
-from helpers import write_file, get_project_id, get_service_region
+from helpers import get_project_id
 import sys
 
 
@@ -51,7 +52,11 @@ if __name__ == "__main__":
 
                 print(f"Done with {file}")
                 # Save to Firestore
-                process.save_processed_document(document)
+
+                # blob_name references the document in GCS
+                blob_name = re.sub(r"^.*/", "", full_path)
+
+                process.save_processed_document(document, blob_id)
                 os.rename(full_path, join(outgoing_path, file))
 
     except Exception as err:
