@@ -90,14 +90,16 @@ def save_processed_document(document):
     collection = os.getenv("COLLECTION", "invoices")
     entity = list(filter(lambda entity: "supplier_name" in entity.type_, document.entities))[0]
     company = entity.mention_text
-    total = float(get_field("Total", document).replace(',', '')[1:-1])
-    paid = float(get_field("Amount Paid", document).replace(',', '')[1:-1])
+    total = float(get_field("Total", document).replace(",", "")[1:-1])
+    paid = float(get_field("Amount Paid", document).replace(",", "")[1:-1])
+    uri = document["uri"]
     data = {
         "company": company,
         "date": get_field("Date", document).strip(),
         "due_date": get_field("Due Date", document).strip(),
         "total": total,
         "amount_due": total - paid,
+        "uri": uri,
         "state": "Not Approved"
     }
     db.collection(collection).document(company).set(data)

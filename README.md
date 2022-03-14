@@ -35,8 +35,10 @@ Currently the Document AI integration with GCS is not working. Therefore this sa
 
 * Add some invoices
   ```
-  gsutil cp -r incoming/*.pdf gs://$GOOGLE_CLOUD_PROJECT-invoices/incoming
+  gsutil cp -r generate/incoming/*.pdf gs://$GOOGLE_CLOUD_PROJECT-invoices/incoming
   ```
+
+  To generate invoices run `python generate/generate_invoices.py`
 
 * Build the container
   ```
