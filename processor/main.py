@@ -13,13 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
+INCOMING_PREFIX = "incoming/"
+PROCESSED_PREFIX = "processed/"
+
 import os
 import re
-from os.path import isdir, isfile, join
 import process
 from helpers import get_project_id
-import sys
 
 from google.cloud import storage
 
@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     client = storage.Client()
 
-    for blob in client.list_blobs(bucket_name, prefix="incoming/"):
+    for blob in client.list_blobs(bucket_name, prefix=INCOMING_PREFIX):
         if not blob.name.endswith("/"): # Skip folder pseudo-blobs
             print(f"Processing {blob.name}")
             document = process.process_blob(
@@ -48,6 +48,8 @@ if __name__ == "__main__":
 
             print(f"Saving info from {blob.name} to Firestore")
             process.save_processed_document(document, blob)
-            print(f"Renaming {blob.name}")
-            blob.bucket.rename_blob(blob, re.sub(blob.name, "incoming", "processed"))
+
+            new_name = f"{PROCESSED_PREFIX}{blob.name[len(INCOMING_PREFIX):]}"
+            print(f"Renaming {blob.name} to {new_name}")
+            blob.bucket.rename_blob(blob, new_name)
             print("Ready for the next blob")

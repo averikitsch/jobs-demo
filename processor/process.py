@@ -18,10 +18,16 @@ from google.cloud import documentai_v1 as documentai
 from google.cloud import firestore
 from google.cloud import storage
 
+INCOMING_PREFIX = "incoming/"
+
 
 def process_blob(
     project_id: str, location: str, processor_id: str, blob: storage.blob.Blob
 ):
+    """
+    Applies the specified DocumentAI processor to the contents of the Blob
+    """
+
     # Instantiates a Synchronous client
     client_options = {
         "api_endpoint": "{}-documentai.googleapis.com".format(location)}
@@ -82,21 +88,29 @@ def summarize():
     html += '</table></body></html>\n'
     return html
 
+
 example_db = []
 db = firestore.Client()
+
+
 def save_processed_document(document, blob):
     collection = os.getenv("COLLECTION", "invoices")
     entity = list(filter(lambda entity: "supplier_name" in entity.type_, document.entities))[0]
     company = entity.mention_text
+
     total = float(get_field("Total", document).replace(',', '')[1:-1])
     paid = float(get_field("Amount Paid", document).replace(',', '')[1:-1])
+
+    rounded_total = "{:.2f}".format(total)
+    rounded_amount_due = "{:.2f}".format(total - paid)
+
     data = {
-        "blob_name": blob.name,
+        "blob_name": blob.name[len(INCOMING_PREFIX):],
         "company": company,
         "date": get_field("Date", document).strip(),
         "due_date": get_field("Due Date", document).strip(),
-        "total": total,
-        "amount_due": total - paid,
+        "total": rounded_total,
+        "amount_due": rounded_amount_due,
         "state": "Not Approved"
     }
     db.collection(collection).document(company).set(data)
