@@ -21,46 +21,33 @@ import process
 from helpers import get_project_id
 import sys
 
+from google.cloud import storage
+
 
 if __name__ == "__main__":
-    try:
-        # Retrieve Jobs-defined env vars
-        TASK_NUM = os.getenv("TASK_NUM", 0)
-        ATTEMPT_NUM = os.getenv("ATTEMPT_NUM", 0)
+    # Retrieve Jobs-defined env vars
+    TASK_NUM = os.getenv("TASK_NUM", 0)
+    ATTEMPT_NUM = os.getenv("ATTEMPT_NUM", 0)
 
-        # Retrieve user-defined env vars
-        location =  "us" #get_service_region()[0:2] or
-        project_id = os.getenv("GOOGLE_CLOUD_PROJECT", get_project_id())
-        processor_id = os.environ["PROCESSOR_ID"]
-        mnt_dir = os.getenv("MNT_DIR", "/mnt/gcs")
+    # Retrieve user-defined env vars
+    location =  "us"
+    project_id = os.getenv("GOOGLE_CLOUD_PROJECT", get_project_id())
+    processor_id = os.environ["PROCESSOR_ID"]
+    bucket_name = os.environ["BUCKET"]
 
-        # Throw error if mount path is not a directory
-        if not isdir(mnt_dir):
-            raise Exception(
-                "Mount path is not a directory. Check your MNT_DIR env var.")
-        # List files in mount
-        incoming_path = join(mnt_dir, "incoming/")
-        outgoing_path = join(mnt_dir, "processed/")
-        print(os.listdir(mnt_dir))
-        print(os.listdir(incoming_path))
-        for file in os.listdir(incoming_path):
-            full_path = join(incoming_path, file)
-            if isfile(full_path):
-                print(f"Processing {file}")
-                document = process.process_document(
-                    project_id, location, processor_id, full_path)
+    client = storage.Client()
 
-                print(f"Done with {file}")
-                # Save to Firestore
+    for blob in client.list_blobs(bucket_name, prefix="incoming/"):
+        if not blob.name.endswith("/"): # Skip folder pseudo-blobs
+            print(f"Processing {blob.name}")
+            document = process.process_blob(
+                project_id, location, processor_id, blob)
 
-                # blob_name references the document in GCS
-                blob_name = re.sub(r"^.*/", "", full_path)
+            print(f"Done with process_blob for {blob.name}")
+            # Save to Firestore
 
-                process.save_processed_document(document, blob_id)
-                os.rename(full_path, join(outgoing_path, file))
-
-    except Exception as err:
-        message = f"Task #{TASK_NUM}, Attempt #{ATTEMPT_NUM} failed: {str(err)}"
-        print(json.dumps({"message": message, "severity": "ERROR"}))
-        sys.exit(1)  # Retry Job Task by exiting the process
-        
+            print(f"Saving info from {blob.name} to Firestore")
+            process.save_processed_document(document, blob)
+            print(f"Renaming {blob.name}")
+            blob.bucket.rename_blob(blob, re.sub(blob.name, "incoming", "processed"))
+            print("Ready for the next blob")

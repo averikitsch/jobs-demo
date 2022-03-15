@@ -16,10 +16,11 @@
 import os
 from google.cloud import documentai_v1 as documentai
 from google.cloud import firestore
+from google.cloud import storage
 
 
-def process_document(
-    project_id: str, location: str, processor_id: str, file_path: str
+def process_blob(
+    project_id: str, location: str, processor_id: str, blob: storage.blob.Blob
 ):
     # Instantiates a Synchronous client
     client_options = {
@@ -31,11 +32,8 @@ def process_document(
     # You must create new processors in the Cloud Console first
     resource_name = client.processor_path(project_id, location, processor_id)
 
-    with open(file_path, "rb") as image:
-        image_content = image.read()
-
     # Read the file into memory
-    doc = {"content": image_content, "mime_type": "application/pdf"}
+    doc = {"content": blob.download_as_bytes(), "mime_type": blob.content_type}
 
     # Configure the process request
     request = documentai.ProcessRequest(name=resource_name, raw_document=doc)
@@ -86,14 +84,14 @@ def summarize():
 
 example_db = []
 db = firestore.Client()
-def save_processed_document(document, blob_name):
+def save_processed_document(document, blob):
     collection = os.getenv("COLLECTION", "invoices")
     entity = list(filter(lambda entity: "supplier_name" in entity.type_, document.entities))[0]
     company = entity.mention_text
     total = float(get_field("Total", document).replace(',', '')[1:-1])
     paid = float(get_field("Amount Paid", document).replace(',', '')[1:-1])
     data = {
-        "blob_name": blob_name,
+        "blob_name": blob.name,
         "company": company,
         "date": get_field("Date", document).strip(),
         "due_date": get_field("Due Date", document).strip(),
