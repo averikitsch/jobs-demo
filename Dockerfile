@@ -21,6 +21,7 @@ FROM python:3.10-buster
 RUN set -e; \
     apt-get update -y && apt-get install -y \
     tini \
+    poppler-utils \
     lsb-release; \
     gcsFuseRepo=gcsfuse-`lsb_release -c -s`; \
     echo "deb http://packages.cloud.google.com/apt $gcsFuseRepo main" | \
