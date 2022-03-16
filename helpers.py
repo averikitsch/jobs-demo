@@ -25,17 +25,3 @@ def get_project_id() -> str:
     default to Application Default Credentials in your local environment."""
     _, project = google.auth.default()
     return project
-
-
-def get_service_region() -> str:
-    """Get region from local metadata server
-    Region in format: projects/PROJECT_NUMBER/regions/REGION"""
-    slug = "instance/region"
-    region = ""
-    try:
-        data = requests.get(METADATA_URI + slug, headers={"Metadata-Flavor": "Google"})
-        region = data.content[0:2]
-    except Exception:
-        region = "us"
-    return region
-

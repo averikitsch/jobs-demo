@@ -24,10 +24,10 @@ steps:
     args:
       - "-c"
       - |
-        # gcloud alpha run jobs create invoice-processing \
-        #   --image gcr.io/$PROJECT_ID/$_SERVICE_NAME \
-        #   --region us-central1 \
-        #   --execution-environment gen2
+        gcloud alpha run jobs create invoice-processing \
+          --image gcr.io/$PROJECT_ID/$_SERVICE_NAME \
+          --region us-central1 \
+          --execution-environment gen2
         
         gcloud alpha run jobs update invoice-processing \
           --image gcr.io/$PROJECT_ID/$_SERVICE_NAME:$BUILD_ID \

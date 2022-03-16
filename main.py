@@ -17,7 +17,7 @@ import json
 import os
 from os.path import isdir, isfile, join
 import process
-from helpers import get_project_id, get_service_region
+from helpers import get_project_id
 import sys
 
 
