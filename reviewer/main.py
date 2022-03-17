@@ -62,13 +62,12 @@ def show_list_to_review():
     invoices = [rec.to_dict() for rec in query.stream()]
 
     gcs = storage.Client()
-    print(f"GCS client is {gcs}")
     bucket = gcs.get_bucket(BUCKET_NAME)
-    print(f"Bucket name {BUCKET_NAME} and bucket is {bucket}")
 
-    credentials, project_id = auth.default()
+    credentials, _ = auth.default()
     if credentials.token is None:
         credentials.refresh(requests.Request())
+        
     for invoice in invoices:
         full_name = f"{PROCESSED_PREFIX}{invoice['blob_name']}"
         print(f"Blob full name is {full_name}")
@@ -82,33 +81,34 @@ def show_list_to_review():
             print(f"url is {url}")
         invoice["url"] = url
 
-    print(invoices)
-
     return render_template("list.html", invoices=invoices), 200
 
 
 @app.route("/", methods=["POST"])
 def approve_selected_invoices():
-    db = firestore.Client()
+    """
+    approve_selected_invoices: Mark the invoices' database entries as "Approved"
+    and rename the images in storage by changing the prefix from PROCESSED_PREFIX
+    to APPROVED_PREFIX.
 
-    print("Processing the POST form")
-    print(request.form)
+    Finally, redirect the browser back to the review page, which no longer shows
+    the approved invoices.
+    """
+    db = firestore.Client()
+    gcs = storage.Client()
+    bucket = gcs.get_bucket(BUCKET_NAME)
 
     for blob_name in request.form.keys():
-        print(f"Form item: {blob_name}")
+        # Set the state to Approved in Firestore
         docref = db.collection("invoices").document(blob_name)
         info = docref.get().to_dict()
         info["state"] = "Approved"
         docref.set(info)
+
+        # Rename storage blob from PROCESSED_PREFIX to APPROVED_PREFIX
+        blob = bucket.get_blob(f"{PROCESSED_PREFIX}{blob_name}")
+        bucket.rename_blob(blob, f"{APPROVED_PREFIX}{blob_name}")
         
-    print("Finished processing the POST form")
-    return redirect("/")
-
-
-@app.route("/<invoice_id>", methods=["POST"])
-def update_status(invoice_id):
-    db = firestore.Client()
-
     return redirect("/")
 
 
