@@ -113,5 +113,5 @@ def save_processed_document(document, blob):
         "amount_due": rounded_amount_due,
         "state": "Not Approved"
     }
-    db.collection(collection).document(company).set(data)
+    db.collection(collection).document(data["blob_name"]).set(data)
     example_db.append(data)

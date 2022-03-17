@@ -34,12 +34,21 @@
     or other common WSGI web servers.
 """
 
-from flask import Flask, redirect, render_template, request
+from datetime import timedelta
 import os
 
+from flask import Flask, redirect, render_template, request
+
+from google import auth
 from google.cloud import firestore
 from google.cloud import storage
 
+from google.auth.transport import requests
+
+
+BUCKET_NAME  = os.environ.get("BUCKET")
+PROCESSED_PREFIX = "processed/"
+APPROVED_PREFIX = "approved/"
 
 app = Flask(__name__)
 
@@ -48,22 +57,52 @@ app = Flask(__name__)
 def show_list_to_review():
     db = firestore.Client()
     colref = db.collection("invoices")
-    query = colref.where("state", "==", "Not Processed")
+    query = colref.where("state", "==", "Not Approved")
+
     invoices = [rec.to_dict() for rec in query.stream()]
+
+    gcs = storage.Client()
+    print(f"GCS client is {gcs}")
+    bucket = gcs.get_bucket(BUCKET_NAME)
+    print(f"Bucket name {BUCKET_NAME} and bucket is {bucket}")
+
+    credentials, project_id = auth.default()
+    if credentials.token is None:
+        credentials.refresh(requests.Request())
+    for invoice in invoices:
+        full_name = f"{PROCESSED_PREFIX}{invoice['blob_name']}"
+        print(f"Blob full name is {full_name}")
+        blob = bucket.get_blob(full_name)
+        url = "None"
+        if blob is not None:
+            url = blob.generate_signed_url(
+                version="v4", expiration=timedelta(hours=1), 
+                service_account_email=credentials.service_account_email,
+                access_token=credentials.token, method="get", scheme="https")
+            print(f"url is {url}")
+        invoice["url"] = url
+
+    print(invoices)
+
     return render_template("list.html", invoices=invoices), 200
 
 
-@app.route("/<invoice_id>", methods=["GET"])
-def show_invoice_to_review(invoice_id):
-    BUCKET_NAME = os.environ.get("BUCKET")
-    client = storage.Client()
+@app.route("/", methods=["POST"])
+def approve_selected_invoices():
+    db = firestore.Client()
 
-    try:
-        bucket = client.get_bucket(BUCKET_NAME)
-    except Exception as e:
-        return f"Could not open bucket: {e}", 400
+    print("Processing the POST form")
+    print(request.form)
 
-    return render_template("invoice.html"), 200
+    for blob_name in request.form.keys():
+        print(f"Form item: {blob_name}")
+        docref = db.collection("invoices").document(blob_name)
+        info = docref.get().to_dict()
+        info["state"] = "Approved"
+        docref.set(info)
+        
+    print("Finished processing the POST form")
+    return redirect("/")
 
 
 @app.route("/<invoice_id>", methods=["POST"])
